@@ -1,4 +1,4 @@
-
+#!/bin/bash
 
 # Import helper functions
 source .github/functions.sh
