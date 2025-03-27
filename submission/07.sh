@@ -9,9 +9,9 @@ decoded_tx=$(bitcoin-cli -regtest decoderawtransaction "$raw_tx")
 
 # Get the transaction ID and vout from the previous transaction
 txid=$(echo "$decoded_tx" | jq -r '.txid' )
-vout=$(echo "$decoded_tx"| jq '[.vout[].value]') 
-
-echo vout # Using the first output as our UTXO
+vout1=$(echo "$decoded_tx"| jq -r '.vout[0].n')  
+vout2=$(echo "$decoded_tx"| jq -r '.vout[1].n') 
+# Using the first output as our UTXO
 
 # Destination address
 dest_addr="2MvLcssW49n9atmksjwg2ZCMsEMsoj3pzUP"
@@ -19,7 +19,7 @@ dest_addr="2MvLcssW49n9atmksjwg2ZCMsEMsoj3pzUP"
 # Create the raw transaction
 # Input: previous transaction output
 # Output: 20,000,000 satoshis to the specified address
-raw_hex=$(bitcoin-cli -regtest createrawtransaction "[{\"txid\":\"$txid\",\"vout\":$vout}]" "[{\"$dest_addr\":0.2}]")
+raw_hex=$(bitcoin-cli -regtest createrawtransaction "[{\"txid\":\"$txid\",\"vout\":$vout1},{\"txid\":\"$txid\",\"vout\":$vout2}]" "{\"$dest_addr\":0.20000000}")
 
 sign=$(bitcoin-cli -regtest signrawtransactionwithwallet $raw_hex)
 
