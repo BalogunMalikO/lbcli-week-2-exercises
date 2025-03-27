@@ -47,19 +47,20 @@ echo ""
 echo "Transaction hex: ${BASE_TX:0:64}... (truncated)"
 echo ""
 
+decoderawtransaction=$(bitcoin-cli -regtest decoderawtransaction "$BASE_TX")
 # STUDENT TASK: Decode the transaction to get the TXID
 # WRITE YOUR SOLUTION BELOW:
-TXID=$(bitcoin-cli -regtest decoderawtransaction "$BASE_TX" | grep -o '"txid":"[^"]*"' | cut -d'"' -f4)
+TXID=$(echo $decoderawtransaction | jq -r '.txid')
 check_cmd "Transaction decoding" "TXID" "$TXID"
 
 echo "Transaction ID: $TXID"
 
 # STUDENT TASK: Extract the number of inputs and outputs from the transaction
 # WRITE YOUR SOLUTION BELOW:
-NUM_INPUTS=$(bitcoin-cli -regtest decoderawtransaction "$BASE_TX" | grep -o '"vin":\[[^]]*\]' | grep -o '{}' | wc -l)
+NUM_INPUTS=$(echo $decoderawtransaction | jq -r '.vin| length')
 check_cmd "Input counting" "NUM_INPUTS" "$NUM_INPUTS"
 
-NUM_OUTPUTS=$(bitcoin-cli -regtest decoderawtransaction "$BASE_TX" | grep -o '"vout":\[[^]]*\]' | grep -o '"value":[0-9.]*' | wc -l)
+NUM_OUTPUTS=$(echo $decoderawtransaction | jq -r '.vout| length')
 check_cmd "Output counting" "NUM_OUTPUTS" "$NUM_OUTPUTS"
 
 echo "Number of inputs: $NUM_INPUTS"
@@ -67,7 +68,7 @@ echo "Number of outputs: $NUM_OUTPUTS"
 
 # STUDENT TASK: Extract the value of the first output in satoshis
 # WRITE YOUR SOLUTION BELOW:
-FIRST_OUTPUT_VALUE=$(bitcoin-cli -regtest decoderawtransaction "$BASE_TX" | grep -o '"value":[0-9.]*' | head -n1 | cut -d':' -f2 | awk '{printf "%.0f", $1 * 100000000}')
+FIRST_OUTPUT_VALUE=$(echo $decoderawtransaction | jq -r '.vout[0].value * 100000000')
 check_cmd "Output value extraction" "FIRST_OUTPUT_VALUE" "$FIRST_OUTPUT_VALUE"
 
 echo "First output value: $FIRST_OUTPUT_VALUE satoshis"
@@ -88,24 +89,15 @@ echo ""
 # STUDENT TASK: Extract the available UTXOs from the decoded transaction for spending
 # WRITE YOUR SOLUTION BELOW:
 UTXO_TXID=$TXID
-UTXO_VOUT_INDEX=0
+UTXO_Higher=$(echo $decoderawtransaction | jq -r '.vout| map(select(.value>=0.15))' )
+UTXO_VOUT_INDEX=$(echo $UTXO_Higher| jq -r '.[0].n')
 check_cmd "UTXO vout selection" "UTXO_VOUT_INDEX" "$UTXO_VOUT_INDEX"
 
-UTXO_VALUE=$(bitcoin-cli -regtest decoderawtransaction "$BASE_TX" | grep -o '"value":[0-9.]*' | head -n1 | cut -d':' -f2 | awk '{printf "%.0f", $1 * 100000000}')
+UTXO_VALUE=$(echo $UTXO_Higher| jq -r '.[0].value')
 check_cmd "UTXO value extraction" "UTXO_VALUE" "$UTXO_VALUE"
 
-echo "Selected UTXO:"
-echo "TXID: $UTXO_TXID"
-echo "Vout Index: $UTXO_VOUT_INDEX"
-echo "Value: $UTXO_VALUE satoshis"
+echo $UTXO_VALUE
 
-# Validate selection
-if [ "$UTXO_VALUE" -ge 15000000 ]; then
-  echo "✅ This UTXO is sufficient for spending 15,000,000 satoshis!"
-else
-  echo "❌ Selected UTXO doesn't have enough funds! Need at least 15,000,000 satoshis."
-  exit 1
-fi
 
 # =========================================================================
 # CHALLENGE 3: Fee Calculation - Calculate appropriate transaction fees
@@ -208,13 +200,13 @@ check_cmd "Transaction decoding" "DECODED_TX" "$DECODED_TX"
 
 # STUDENT TASK: Extract and verify the key components from the decoded transaction
 # WRITE YOUR SOLUTION BELOW:
-VERIFY_RBF=$(if [[ "$DECODED_TX" == *"4294967293"* ]]; then echo "true"; else echo "false"; fi)
+VERIFY_RBF=$(echo $DECODED_TX | jq -r '.vin[0].sequence == 4294967293')
 check_cmd "RBF verification" "VERIFY_RBF" "$VERIFY_RBF"
 
-VERIFY_PAYMENT=$(echo "$DECODED_TX" | grep -o '"value":[0-9.]*' | head -n1 | cut -d':' -f2)
+VERIFY_PAYMENT=$(echo $DECODED_TX | jq -r '.vout[0].value')
 check_cmd "Payment verification" "VERIFY_PAYMENT" "$VERIFY_PAYMENT"
 
-VERIFY_CHANGE=$(echo "$DECODED_TX" | grep -o '"value":[0-9.]*' | tail -n1 | cut -d':' -f2)
+VERIFY_CHANGE=$(echo $DECODED_TX | jq -r '.vout[1].value')
 check_cmd "Change verification" "VERIFY_CHANGE" "$VERIFY_CHANGE"
 
 echo "Verification Results:"
@@ -280,13 +272,13 @@ echo "- Send the funds to: 2MvM2nZjueT9qQJgZh7LBPoudS554B6arQc"
 echo ""
 
 # For the exercise, we'll assume the first transaction's TXID is the one created above in challenge 4 ($RAW_TX)
-PARENT_TXID=$(bitcoin-cli -regtest decoderawtransaction "$RAW_TX" | grep -o '"txid":"[^"]*"' | cut -d'"' -f4)
+PARENT_TXID=$(bitcoin-cli -regtest decoderawtransaction "$RAW_TX" | jq -r '.txid' )
 check_cmd "Parent TXID extraction" "PARENT_TXID" "$PARENT_TXID"
 echo "Parent transaction ID: $PARENT_TXID"
 
 # STUDENT TASK: Identify the change output index from the parent transaction
 # WRITE YOUR SOLUTION BELOW:
-CHANGE_OUTPUT_INDEX=1
+CHANGE_OUTPUT_INDEX=$(bitcoin-cli -regtest decoderawtransaction $RAW_TX | jq -r '.vout[1].n')
 check_cmd "Change output identification" "CHANGE_OUTPUT_INDEX" "$CHANGE_OUTPUT_INDEX"
 
 # STUDENT TASK: Create the input JSON structure for the child transaction
@@ -311,7 +303,7 @@ check_cmd "Child amount calculation" "CHILD_SEND_AMOUNT" "$CHILD_SEND_AMOUNT"
 CHILD_SEND_BTC=$(echo "scale=8; $CHILD_SEND_AMOUNT/100000000" | bc)
 
 # STUDENT TASK: Create the outputs JSON structure
-CHILD_OUTPUTS='{"'$CHILD_RECIPIENT'":'$CHILD_SEND_BTC'}'
+CHILD_OUTPUTS="{\"$CHILD_RECIPIENT\": $CHILD_SEND_BTC}"
 check_cmd "Child output creation" "CHILD_OUTPUTS" "$CHILD_OUTPUTS"
 
 # STUDENT TASK: Create the raw child transaction
@@ -337,13 +329,13 @@ echo "- Sends funds to: bcrt1qxhy8dnae50nwkg6xfmjtedgs6augk5edj2tm3e"
 echo ""
 
 # Decode the secondary transaction (SECONDARY_TX) to get its TXID
-SECONDARY_TXID=$(bitcoin-cli -regtest decoderawtransaction "$SECONDARY_TX" | grep -o '"txid":"[^"]*"' | cut -d'"' -f4)
+SECONDARY_TXID=$(bitcoin-cli -regtest decoderawtransaction "$SECONDARY_TX" | jq -r '.txid')
 check_cmd "Secondary TXID extraction" "SECONDARY_TXID" "$SECONDARY_TXID"
 echo "Secondary transaction ID: $SECONDARY_TXID"
 
 # STUDENT TASK: Create the input JSON structure with a 10-block relative timelock
 # WRITE YOUR SOLUTION BELOW:
-TIMELOCK_INPUTS='[{"txid":"'$SECONDARY_TXID'","vout":0,"sequence":10}]'
+TIMELOCK_INPUTS='[{"txid":"'$SECONDARY_TXID'","vout":0,"sequence":4294967286}]'
 check_cmd "Timelock input creation" "TIMELOCK_INPUTS" "$TIMELOCK_INPUTS"
 
 # Recipient address for timelock funds
@@ -351,7 +343,7 @@ TIMELOCK_ADDRESS="bcrt1qxhy8dnae50nwkg6xfmjtedgs6augk5edj2tm3e"
 
 # STUDENT TASK: Calculate the amount to send (use the output value from SECONDARY_TX, minus a fee)
 # Hint: Extract the output value from the secondary TX first
-SECONDARY_OUTPUT_VALUE=$(bitcoin-cli -regtest decoderawtransaction "$SECONDARY_TX" | grep -o '"value":[0-9.]*' | head -n1 | cut -d':' -f2 | awk '{printf "%.0f", $1 * 100000000}')
+SECONDARY_OUTPUT_VALUE=$(bitcoin-cli -regtest decoderawtransaction "$SECONDARY_TX" | jq -r '.vout[0].value * 100000000')
 check_cmd "Secondary output value extraction" "SECONDARY_OUTPUT_VALUE" "$SECONDARY_OUTPUT_VALUE"
 
 TIMELOCK_FEE=1000 # Use a simple fee of 1000 satoshis for this exercise
@@ -362,7 +354,7 @@ check_cmd "Timelock amount calculation" "TIMELOCK_AMOUNT" "$TIMELOCK_AMOUNT"
 TIMELOCK_BTC=$(echo "scale=8; $TIMELOCK_AMOUNT/100000000" | bc)
 
 # STUDENT TASK: Create the outputs JSON structure
-TIMELOCK_OUTPUTS='{"'$TIMELOCK_ADDRESS'":'$TIMELOCK_BTC'}'
+TIMELOCK_OUTPUTS="{\"$TIMELOCK_ADDRESS\":$TIMELOCK_BTC}"
 check_cmd "Timelock output creation" "TIMELOCK_OUTPUTS" "$TIMELOCK_OUTPUTS"
 
 # STUDENT TASK: Create the raw transaction with timelock
