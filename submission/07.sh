@@ -9,7 +9,9 @@ decoded_tx=$(bitcoin-cli -regtest decoderawtransaction "$raw_tx")
 
 # Get the transaction ID and vout from the previous transaction
 txid=$(echo "$decoded_tx" | jq -r '.txid' )
-vout=$(echo "$decoded_tx"| jq -r '.[0].vout')  # Using the first output as our UTXO
+vout=$(echo "$decoded_tx"| jq -r '.vout') 
+
+echo vout # Using the first output as our UTXO
 
 # Destination address
 dest_addr="2MvLcssW49n9atmksjwg2ZCMsEMsoj3pzUP"
@@ -21,6 +23,6 @@ raw_hex=$(bitcoin-cli -regtest createrawtransaction "[{\"txid\":\"$txid\",\"vout
 
 sign=$(bitcoin-cli -regtest signrawtransactionwithwallet $raw_hex)
 
-signed=$(bitcoin-cli -sendrawtransaction $sign)
+signed=$(bitcoin-cli -regtest sendrawtransaction $sign)
 
 echo "Raw transaction: $signed"
