@@ -93,7 +93,7 @@ UTXO_Higher=$(echo $decoderawtransaction | jq -r '.vout| map(select(.value>=0.15
 UTXO_VOUT_INDEX=$(echo $UTXO_Higher| jq -r '.[0].n')
 check_cmd "UTXO vout selection" "UTXO_VOUT_INDEX" "$UTXO_VOUT_INDEX"
 
-UTXO_VALUE=$(echo $UTXO_Higher| jq -r '.[0].value * 100000000')
+UTXO_VALUE=$(echo $UTXO_Higher| jq -r '.[0].value * 100000000'| awk '{print int($1)}')
 check_cmd "UTXO value extraction" "UTXO_VALUE" "$UTXO_VALUE"
 
 echo $UTXO_VALUE
@@ -173,7 +173,8 @@ PAYMENT_BTC=$(echo "scale=8; $PAYMENT_AMOUNT/100000000" | bc)
 CHANGE_BTC=$(echo "scale=8; $CHANGE_AMOUNT/100000000" | bc)
 
 # STUDENT TASK: Create the outputs JSON structure
-TX_OUTPUTS='{"'$PAYMENT_ADDRESS'":'$PAYMENT_BTC',"'$CHANGE_ADDRESS'":'$CHANGE_BTC'}'
+
+TX_OUTPUTS="{\"$PAYMENT_ADDRESS\":0$PAYMENT_BTC,\"$CHANGE_ADDRESS\":0$CHANGE_BTC}"
 check_cmd "Output JSON creation" "TX_OUTPUTS" "$TX_OUTPUTS"
 
 # STUDENT TASK: Create the raw transaction
@@ -215,7 +216,7 @@ echo "- Payment to $PAYMENT_ADDRESS with amount $VERIFY_PAYMENT BTC"
 echo "- Change to $CHANGE_ADDRESS with amount $VERIFY_CHANGE BTC"
 
 # Final verification
-if [ "$VERIFY_RBF" == "true" ] && [ "$VERIFY_PAYMENT" == "$PAYMENT_BTC" ] && [ "$VERIFY_CHANGE" == "$CHANGE_BTC" ]; then
+if [ "$VERIFY_RBF" == "true" ] && [ "$VERIFY_PAYMENT" == "0$PAYMENT_BTC" ] && [ "$VERIFY_CHANGE" == "0$CHANGE_BTC" ]; then
   echo "✅ Transaction looks good! Ready for signing."
 else
   echo "❌ Transaction verification failed! Double-check your transaction."
@@ -303,7 +304,7 @@ check_cmd "Child amount calculation" "CHILD_SEND_AMOUNT" "$CHILD_SEND_AMOUNT"
 CHILD_SEND_BTC=$(echo "scale=8; $CHILD_SEND_AMOUNT/100000000" | bc)
 
 # STUDENT TASK: Create the outputs JSON structure
-CHILD_OUTPUTS="{\"$CHILD_RECIPIENT\": $CHILD_SEND_BTC}"
+CHILD_OUTPUTS="{\"$CHILD_RECIPIENT\": 0$CHILD_SEND_BTC}"
 check_cmd "Child output creation" "CHILD_OUTPUTS" "$CHILD_OUTPUTS"
 
 # STUDENT TASK: Create the raw child transaction
@@ -354,7 +355,7 @@ check_cmd "Timelock amount calculation" "TIMELOCK_AMOUNT" "$TIMELOCK_AMOUNT"
 TIMELOCK_BTC=$(echo "scale=8; $TIMELOCK_AMOUNT/100000000" | bc)
 
 # STUDENT TASK: Create the outputs JSON structure
-TIMELOCK_OUTPUTS="{\"$TIMELOCK_ADDRESS\":$TIMELOCK_BTC}"
+TIMELOCK_OUTPUTS="{\"$TIMELOCK_ADDRESS\":0$TIMELOCK_BTC}"
 check_cmd "Timelock output creation" "TIMELOCK_OUTPUTS" "$TIMELOCK_OUTPUTS"
 
 # STUDENT TASK: Create the raw transaction with timelock
