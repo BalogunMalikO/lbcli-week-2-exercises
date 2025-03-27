@@ -1,6 +1,6 @@
 # List the current UTXOs in your wallet.
 
-UTXO =($bitcoin-cli -regtest -rpcwallet=btruswallet listunspent)
+UTXO=$(bitcoin-cli -regtest  listunspent)
 
 echo "THIS IS UTXO: $UTXO"
 
