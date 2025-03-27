@@ -5,4 +5,4 @@ mine_blocks 101 $SEGWIT_ADDR
 
 # Return only the Address
 
-echo "THIS IS MY SEGWIT ADDRESS: $SEGWIT_ADDR"
+
