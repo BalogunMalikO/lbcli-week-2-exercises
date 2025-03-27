@@ -21,8 +21,8 @@ dest_addr="2MvLcssW49n9atmksjwg2ZCMsEMsoj3pzUP"
 # Output: 20,000,000 satoshis to the specified address
 raw_hex=$(bitcoin-cli -regtest createrawtransaction "[{\"txid\":\"$txid\",\"vout\":$vout1},{\"txid\":\"$txid\",\"vout\":$vout2}]" "{\"$dest_addr\":0.20000000}")
 
-sign=$(bitcoin-cli -regtest signrawtransactionwithwallet $raw_hex)
+# sign=$(bitcoin-cli -regtest signrawtransactionwithwallet $raw_hex)
 
-signed=$(bitcoin-cli -regtest sendrawtransaction $sign)
+# signed=$(bitcoin-cli -regtest sendrawtransaction $sign)
 
-echo "Raw transaction: $signed"
+echo "Raw transaction: $raw_hex"
