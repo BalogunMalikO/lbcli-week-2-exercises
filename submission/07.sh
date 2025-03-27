@@ -8,8 +8,8 @@ raw_tx="01000000000101c8b0928edebbec5e698d5f86d0474595d9f6a5b2e4e3772cd9d1005f23
 decoded_tx=$(bitcoin-cli -regtest decoderawtransaction "$raw_tx")
 
 # Get the transaction ID and vout from the previous transaction
-txid=$(echo "$decoded_tx" | grep -o '"txid":"[^"]*"' | cut -d'"' -f4)
-vout=0  # Using the first output as our UTXO
+txid=$(echo "$decoded_tx" | jq -r '.txid' )
+vout=$(echo "$decoded_tx"| jq -r '.vout')  # Using the first output as our UTXO
 
 # Destination address
 dest_addr="2MvLcssW49n9atmksjwg2ZCMsEMsoj3pzUP"
