@@ -25,4 +25,4 @@ raw_hex=$(bitcoin-cli -regtest createrawtransaction "[{\"txid\":\"$txid\",\"vout
 
 # signed=$(bitcoin-cli -regtest sendrawtransaction $sign)
 
-echo "Raw transaction: $raw_hex"
+echo $raw_hex
