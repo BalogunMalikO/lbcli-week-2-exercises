@@ -9,7 +9,7 @@ decoded_tx=$(bitcoin-cli -regtest decoderawtransaction "$raw_tx")
 
 # Get the transaction ID and vout from the previous transaction
 txid=$(echo "$decoded_tx" | jq -r '.txid' )
-vout=$(echo "$decoded_tx"| jq -r '.vout') 
+vout=$(echo "$decoded_tx"| jq '[.vout[].value]') 
 
 echo vout # Using the first output as our UTXO
 
