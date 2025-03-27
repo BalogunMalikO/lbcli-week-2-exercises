@@ -93,7 +93,7 @@ UTXO_Higher=$(echo $decoderawtransaction | jq -r '.vout| map(select(.value>=0.15
 UTXO_VOUT_INDEX=$(echo $UTXO_Higher| jq -r '.[0].n')
 check_cmd "UTXO vout selection" "UTXO_VOUT_INDEX" "$UTXO_VOUT_INDEX"
 
-UTXO_VALUE=$(echo $UTXO_Higher| jq -r '.[0].value')
+UTXO_VALUE=$(echo $UTXO_Higher| jq -r '.[0].value * 100000000')
 check_cmd "UTXO value extraction" "UTXO_VALUE" "$UTXO_VALUE"
 
 echo $UTXO_VALUE
