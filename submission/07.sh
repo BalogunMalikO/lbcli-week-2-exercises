@@ -23,4 +23,4 @@ sign=$(bitcoin-cli -regtest signrawtransactionwithwallet $raw_hex)
 
 signed=$(bitcoin-cli -sendrawtransaction $sign)
 
-echo "Raw transaction: $raw_tx"
+echo "Raw transaction: $signed"
